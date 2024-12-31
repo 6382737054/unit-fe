@@ -5,12 +5,35 @@ import Homepage from './pages/homepage';
 import Navbar from './components/navbar';
 import FormsPage from './pages/forms';
 import OfficerRegistrationForm from './pages/officerforms';
+import ErrorBoundary from './errorboundary';
+
+// Public Route Component
+const PublicRoute = ({ children }) => {
+  const user = localStorage.getItem('user');
+  console.log("PublicRoute accessed, user:", user);
+  
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+  
+  return children;
+};
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
+  console.log("ProtectedRoute accessed, user:", user);
   
   if (!user) {
+    console.log("No user found, redirecting to login");
+    return <Navigate to="/login" replace />;
+  }
+
+  try {
+    // Just verify it's valid JSON, we don't need to check the structure here
+    JSON.parse(user);
+  } catch (err) {
+    console.error("Invalid user data in localStorage");
     return <Navigate to="/login" replace />;
   }
 
@@ -24,6 +47,7 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   return (
+    <ErrorBoundary>
     <Router>
       <Routes>
         <Route path="/login" element={
@@ -36,12 +60,12 @@ const App = () => {
             <Homepage />
           </ProtectedRoute>
         } />
-         <Route path="/officer" element={
+        <Route path="/officer" element={
           <ProtectedRoute>
             <OfficerRegistrationForm />
           </ProtectedRoute>
         } />
-          <Route path="/forms" element={
+        <Route path="/forms" element={
           <ProtectedRoute>
             <FormsPage />
           </ProtectedRoute>
@@ -49,18 +73,8 @@ const App = () => {
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
+    </ErrorBoundary>
   );
-};
-
-// Public Route Component (redirects to home if already logged in)
-const PublicRoute = ({ children }) => {
-  const user = localStorage.getItem('user');
-  
-  if (user) {
-    return <Navigate to="/home" replace />;
-  }
-
-  return children;
 };
 
 export default App;

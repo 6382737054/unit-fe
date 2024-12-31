@@ -53,45 +53,57 @@ const Navbar = () => {
     </Link>
   );
 
-  const FormsDropdown = () => (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsFormsDropdownOpen(!isFormsDropdownOpen)}
-        className="px-4 py-2 rounded-lg text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
-      >
-        <Info size={18} />
-        <span>Forms</span>
-        <ChevronDown 
-          size={16} 
-          className={`transform transition-transform duration-200 ${
-            isFormsDropdownOpen ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
+  const FormsDropdown = () => {
+    const dropdownNavigate = useNavigate(); // Rename to avoid confusion
+    
+    const handleNavigation = (path) => {
+      console.log('Navigation triggered to:', path);
+      setIsFormsDropdownOpen(false);
+      
+      // Add a small delay to ensure state is updated
+      setTimeout(() => {
+        console.log('Navigating to:', path);
+        dropdownNavigate(path);
+      }, 0);
+    };
   
-      {isFormsDropdownOpen && (
-        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
-          <Link
-            to="/forms"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors duration-200"
-            onClick={() => setIsFormsDropdownOpen(false)}
-          >
-            <UserPlus size={16} />
-            <span>Student Registration</span>
-          </Link>
-          <Link
-            to="/officer"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors duration-200"
-            onClick={() => setIsFormsDropdownOpen(false)}
-          >
-            <ClipboardList size={16} />
-            <span>Officer Form</span>
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsFormsDropdownOpen(!isFormsDropdownOpen)}
+          className="px-4 py-2 rounded-lg text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+        >
+          <Info size={18} />
+          <span>Forms</span>
+          <ChevronDown 
+            size={16} 
+            className={`transform transition-transform duration-200 ${
+              isFormsDropdownOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+    
+        {isFormsDropdownOpen && (
+          <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+            <div
+              onClick={() => handleNavigation('/forms')}
+              className="w-full flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors duration-200 cursor-pointer"
+            >
+              <UserPlus size={16} />
+              <span>Student Registration</span>
+            </div>
+            <div
+              onClick={() => handleNavigation('/officer')}
+              className="w-full flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors duration-200 cursor-pointer"
+            >
+              <ClipboardList size={16} />
+              <span>Officer Form</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
   return (
     <nav className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">

@@ -9,7 +9,16 @@ import {
 } from 'lucide-react';
 import SchoolFormsList from './adminview';
 
-const MAX_STUDENTS_PER_GROUP = 20;
+// Replace the single MAX_STUDENTS_PER_GROUP constant with this object
+const SECTION_LIMITS = {
+  bunnyDetails: 20,
+  cubsDetails: 24,
+  bulbulsDetails: 24,
+  scoutsDetails: 32,
+  guidesDetails: 32,
+  roverDetails: 24,
+  rangerDetails: 24
+};
 
 const FormsPage = () => {
   const navigate = useNavigate();
@@ -55,32 +64,40 @@ const FormsPage = () => {
       studentDetails: []
     }]
   });
-
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const userType = localStorage.getItem('UserType');
-    const token = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
+    const storedUserType = localStorage.getItem('UserType'); // Note the capital 'U' in UserType
+    console.log("Stored user:", storedUser);
+    console.log("User type from localStorage:", storedUserType);
     
-    if (!storedUser) {
+    if (!storedUser || !storedToken) {
+      console.log("Missing user data or token");
       navigate('/login');
       return;
     }
 
+    // Set the token and userType
+    setToken(storedToken);
+    setUserType(storedUserType); // This was missing before
+  
     try {
-      const parsedUser = JSON.parse(storedUser);
-      setToken(token);
-      setUserType(userType);
+      const userData = JSON.parse(storedUser);
+      console.log("Parsed user data:", userData);
       
-      const userData = parsedUser.output.data;
+      if (!userData?.id || !userData?.districtId) {
+        console.log("Missing required user data");
+        navigate('/login');
+        return;
+      }
+  
       setFormData(prev => ({
         ...prev,
         loginId: userData.id,
         districtId: userData.districtId
       }));
-      
-      api.defaults.headers.common['Authorization'] = token;
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error parsing user data:', err);
       navigate('/login');
     }
   }, [navigate]);
@@ -134,9 +151,10 @@ const FormsPage = () => {
   };
   const addNewStudent = (section, groupIndex) => {
     const currentGroup = formData[section][groupIndex];
+    const sectionLimit = SECTION_LIMITS[section];
     
-    // If current group has reached 20 students
-    if (currentGroup.studentDetails.length >= MAX_STUDENTS_PER_GROUP) {
+    // If current group has reached its section-specific limit
+    if (currentGroup.studentDetails.length >= sectionLimit) {
       // Create a new group automatically
       setFormData(prev => ({
         ...prev,
@@ -156,7 +174,7 @@ const FormsPage = () => {
         ]
       }));
     } else {
-      // Add to existing group if less than 20
+      // Add to existing group if less than the limit
       setFormData(prev => {
         const newData = { ...prev };
         newData[section][groupIndex].studentDetails.push({
@@ -171,6 +189,7 @@ const FormsPage = () => {
       });
     }
   };
+  
   const removeStudent = (section, groupIndex, studentIndex) => {
     setFormData(prev => {
       const newData = { ...prev };
@@ -197,7 +216,8 @@ const FormsPage = () => {
   const renderStudentGroup = (section, groupIndex, sectionKey) => {
     const group = formData[section][groupIndex];
     const isNotBunny = section !== 'bunnyDetails';
-    const spotsLeft = MAX_STUDENTS_PER_GROUP - group.studentDetails.length;
+    const sectionLimit = SECTION_LIMITS[sectionKey];
+    const spotsLeft = sectionLimit - group.studentDetails.length;
   
     return (
       <div key={groupIndex} className="bg-white rounded-lg shadow-sm p-6 mb-4">
@@ -372,10 +392,17 @@ const FormsPage = () => {
     setError('');
     setLoading(true);
 
+    const currentToken = localStorage.getItem('token'); // Get fresh token
+    if (!currentToken) {
+      setError('Session expired. Please login again.');
+      navigate('/login');
+      return;
+    }
+
     try {
       const response = await api.post('/registerSchool', formData, {
         headers: {
-          'Authorization': token
+          'Authorization': `${currentToken}`
         }
       });
       
@@ -385,33 +412,42 @@ const FormsPage = () => {
       }
     } catch (err) {
       console.error('API Error:', err);
-      setError(err.response?.data?.message || 'Failed to register school. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to register school. Please try again.';
+      setError(errorMessage);
+      
+      if (err.response?.status === 401) {
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (userType === 'Admin') {
-    return <SchoolFormsList />;
-  }
+// Render admin view if user is admin
+if (userType === 'Admin') {
+  console.log('Rendering admin view');
+  return <SchoolFormsList />;
+}
 
-  if (userType !== 'District') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-4">Only District and Admin users can access this page.</p>
-          <button
-            onClick={() => navigate('/home')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </button>
-        </div>
+// Check for district access
+if (userType !== 'District') {
+  console.log('Access denied - User type:', userType);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+        <p className="text-gray-600 mb-4">Only District and Admin users can access this page.</p>
+        <button
+          onClick={() => navigate('/home')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

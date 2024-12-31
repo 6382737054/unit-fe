@@ -1,16 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { CircleUserRound, Users, School, Baby, Flag, Compass, Mountain, Bird } from 'lucide-react';
+import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const StatsDashboard = () => {
   const [userType, setUserType] = useState('');
   const [stats, setStats] = useState([]);
 
+  // Define solid colors for the chart
+  const colorMap = {
+    blue: '#3B82F6',    // Blue
+    pink: '#EC4899',    // Pink
+    green: '#22C55E',   // Green
+    purple: '#9333EA',  // Purple
+    orange: '#F97316',  // Orange
+    red: '#EF4444',     // Red
+    yellow: '#EAB308',  // Yellow
+    indigo: '#6366F1'   // Indigo
+  };
+
+  // Icons background and text colors
+  const iconColors = {
+    blue: { bg: 'rgb(219, 234, 254)', text: 'rgb(37, 99, 235)' },
+    pink: { bg: 'rgb(252, 231, 243)', text: 'rgb(219, 39, 119)' },
+    green: { bg: 'rgb(220, 252, 231)', text: 'rgb(22, 163, 74)' },
+    purple: { bg: 'rgb(237, 233, 254)', text: 'rgb(124, 58, 237)' },
+    orange: { bg: 'rgb(254, 235, 220)', text: 'rgb(234, 88, 12)' },
+    red: { bg: 'rgb(254, 226, 226)', text: 'rgb(220, 38, 38)' },
+    yellow: { bg: 'rgb(254, 249, 195)', text: 'rgb(202, 138, 4)' },
+    indigo: { bg: 'rgb(224, 231, 255)', text: 'rgb(67, 56, 202)' }
+  };
+
   useEffect(() => {
-    // Get userType from localStorage
     const storedUserType = localStorage.getItem('UserType') || 'District';
     setUserType(storedUserType);
 
-    // Set stats based on userType
     if (storedUserType === 'District') {
       setStats([
         { title: 'Schools', count: 156, icon: School, color: 'blue', trend: '+12%' },
@@ -36,10 +62,46 @@ const StatsDashboard = () => {
     }
   }, []);
 
+  const data = {
+    labels: stats.map(stat => stat.title),
+    datasets: [
+      {
+        data: stats.map(stat => stat.count),
+        backgroundColor: stats.map(stat => colorMap[stat.color]),
+        borderColor: stats.map(stat => colorMap[stat.color]),
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const value = context.raw;
+            return ` ${context.label}: ${value.toLocaleString()}`;
+          }
+        }
+      }
+    },
+    cutout: '60%',
+    maintainAspectRatio: false
+  };
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen mt-10">
-     
-      
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <div
@@ -53,8 +115,8 @@ const StatsDashboard = () => {
                   {stat.count.toLocaleString()}
                 </h3>
               </div>
-              <div className={`bg-${stat.color}-100 p-3 rounded-full`}>
-                <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+              <div style={{ backgroundColor: iconColors[stat.color].bg }} className="p-3 rounded-full">
+                <stat.icon style={{ color: iconColors[stat.color].text }} className="w-6 h-6" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
@@ -91,24 +153,9 @@ const StatsDashboard = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="p-4 bg-blue-50 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center">
-              <Users className="w-5 h-5 mr-2" />
-              Add Member
-            </button>
-            <button className="p-4 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 transition-colors flex items-center justify-center">
-              <School className="w-5 h-5 mr-2" />
-              Add School
-            </button>
-            <button className="p-4 bg-purple-50 rounded-lg text-purple-600 hover:bg-purple-100 transition-colors flex items-center justify-center">
-              <Flag className="w-5 h-5 mr-2" />
-              View Reports
-            </button>
-            <button className="p-4 bg-orange-50 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center">
-              <Compass className="w-5 h-5 mr-2" />
-              Settings
-            </button>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Stats Breakdown</h2>
+          <div className="h-80 relative">
+            <Doughnut data={data} options={options} />
           </div>
         </div>
       </div>

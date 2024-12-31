@@ -67,25 +67,35 @@ const OfficerRegistrationForm = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    console.log("Stored user:", storedUser);
+    
     if (!storedUser) {
+      console.log("No user found in localStorage");
       navigate('/login');
       return;
     }
 
     try {
-      const parsedUser = JSON.parse(storedUser);
-      const userData = parsedUser.output.data;
+      const userData = JSON.parse(storedUser);
+      console.log("Parsed user data:", userData);
+      
+      // Check for required fields directly in userData
+      if (!userData?.id || !userData?.districtId) {
+        console.log("Missing required user data");
+        navigate('/login');
+        return;
+      }
+
       setFormData(prev => ({
         ...prev,
         loginId: userData.id,
         districtId: userData.districtId
       }));
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error parsing user data:', err);
       navigate('/login');
     }
   }, [navigate]);
-
   const handleChange = (index, field, value) => {
     setFormData(prev => {
       const newOfficers = [...prev.officers];
